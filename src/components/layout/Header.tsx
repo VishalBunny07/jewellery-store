@@ -11,7 +11,9 @@ import {
   X,
   UserRound,
 } from "lucide-react";
+
 import DesktopNavigation from "../navigation/DesktopNavigation";
+import { useCart } from "@/context/CartContext";
 
 const menuItems = [
   { name: "New In", href: "/collections/new-arrivals" },
@@ -28,11 +30,13 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  const { cartCount } = useCart();
+
   return (
     <header className="sticky top-0 z-50 bg-background">
       <div className="section-container">
         {/* Main Header */}
-        <div className="flex h-[68px] items-center justify-between gap-3 md:h-[82px]">
+        <div className="flex h-68px items-center justify-between gap-3 md:h-82px">
 
           {/* Mobile Menu Button */}
           <button
@@ -57,6 +61,7 @@ export default function Header() {
             <span className="whitespace-nowrap font-serif text-[20px] leading-tight text-primary sm:text-2xl">
               Jewellery Store
             </span>
+
             <span className="mt-1 text-[8px] tracking-[0.24em] text-muted sm:text-[9px]">
               TIMELESS ELEGANCE
             </span>
@@ -68,6 +73,7 @@ export default function Header() {
             className="mx-8 hidden max-w-md flex-1 items-center border-b border-border py-2 lg:flex"
           >
             <Search size={18} className="shrink-0 text-muted" />
+
             <input
               type="search"
               name="q"
@@ -123,12 +129,13 @@ export default function Header() {
             {/* Cart */}
             <Link
               href="/cart"
-              aria-label="Shopping bag"
+              aria-label={`Shopping bag, ${cartCount} items`}
               className="relative flex h-10 w-10 items-center justify-center"
             >
               <ShoppingBag size={21} />
-              <span className="absolute right-0 top-0 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
-                0
+
+              <span className="absolute right-0 top-0 flex h-16px min-w-16px items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
+                {cartCount > 99 ? "99+" : cartCount}
               </span>
             </Link>
           </div>
@@ -141,6 +148,7 @@ export default function Header() {
             className="flex items-center gap-3 border-t border-border py-3 lg:hidden"
           >
             <Search size={19} className="shrink-0 text-muted" />
+
             <input
               type="search"
               name="q"
@@ -159,7 +167,10 @@ export default function Header() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="absolute left-0 top-full max-h-[calc(100dvh-68px)] w-full overflow-y-auto border-t border-border bg-background shadow-lg lg:hidden">
-          <nav aria-label="Mobile navigation" className="section-container py-3">
+          <nav
+            aria-label="Mobile navigation"
+            className="section-container py-3"
+          >
             {menuItems.map((item) => (
               <Link
                 key={item.name}

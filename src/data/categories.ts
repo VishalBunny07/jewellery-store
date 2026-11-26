@@ -3,6 +3,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  bannerImage: string;
   image: string;
 }
 
@@ -11,48 +12,56 @@ export const categories: Category[] = [
     id: "1",
     name: "Rings",
     slug: "rings",
-    image: "/images/categories/rings/category.jpg",
+    bannerImage: "/images/reference-giva/categories/rings/ring-01.webp",
+    image: "/images/reference-giva/categories/rings/ring-02.webp",
   },
   {
     id: "2",
     name: "Earrings",
     slug: "earrings",
-    image: "/images/categories/earrings/category.jpg",
+    bannerImage: "/images/reference-giva/categories/earrings/earrings-01.webp",
+    image: "/images/reference-giva/categories/earrings/earrings-02.webp",
   },
   {
     id: "3",
-    name: "Necklaces",
-    slug: "necklaces",
-    image: "/images/categories/necklaces/category.jpg",
+    name: "Pendants",
+    slug: "pendants",
+    bannerImage: "/images/reference-giva/categories/pendants/pendants-01.webp",
+    image: "/images/reference-giva/categories/pendants/pendants-02.webp",
   },
   {
     id: "4",
     name: "Bracelets",
     slug: "bracelets",
-    image: "/images/categories/bracelets/category.jpg",
+    bannerImage: "/images/reference-giva/categories/bracelets/bracelets-01.webp",
+    image: "/images/reference-giva/categories/bracelets/bracelets-02.webp",
   },
   {
     id: "5",
     name: "Mangalsutra",
     slug: "mangalsutra",
-    image: "/images/categories/mangalsutra/category.jpg",
+    bannerImage: "/images/reference-giva/categories/mangalsutra/mangalsutra-01.webp",
+    image: "/images/reference-giva/categories/mangalsutra/mangalsutra-02.webp",
   },
   {
     id: "6",
     name: "Anklets",
     slug: "anklets",
-    image: "/images/categories/anklets/category.jpg",
+    bannerImage: "/images/reference-giva/categories/anklets/anklets-01.webp",
+    image: "/images/reference-giva/categories/anklets/anklets-02.webp",
   },
   {
     id: "7",
     name: "Jewellery Sets",
     slug: "jewellery-sets",
-    image: "/images/categories/jewellery-sets/category.jpg",
+    bannerImage: "/images/reference-giva/categories/jewellery-sets/jewellery-sets-01.webp",
+    image: "/images/reference-giva/categories/jewellery-sets/jewellery-sets-02.webp",
   },
-  {
-    id: "8",
-    name: "Gifts",
-    slug: "gifts",
-    image: "/images/categories/gifts/category.jpg",
-  },
+  // {
+  //   id: "8",
+  //   name: "Gifts",
+  //   slug: "gifts",
+  //   bannerImage: "/images/reference-giva/categories/gifts/gift-01.webp",
+  //   image: "/images/reference-giva/categories/gifts/gift-02.webp",
+  // },
 ];
