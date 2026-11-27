@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -10,6 +11,8 @@ import {
   UserRound,
   ShoppingBag,
 } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 const navigationItems = [
   { name: "Home", href: "/", icon: Home },
@@ -19,8 +22,30 @@ const navigationItems = [
   { name: "Cart", href: "/cart", icon: ShoppingBag },
 ];
 
+const subscribe = () => () => {};
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+
+
 export default function MobileBottomNav() {
   const pathname = usePathname();
+
+  const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
+
+  const isHydrated = useSyncExternalStore(
+  subscribe,
+  getClientSnapshot,
+  getServerSnapshot
+);
+
 
   return (
     <nav
@@ -47,7 +72,21 @@ export default function MobileBottomNav() {
                 isActive ? "text-primary" : "text-muted"
               }`}
             >
-              <Icon size={21} strokeWidth={isActive ? 2.2 : 1.7} />
+              <div className="relative">
+                <Icon size={21} strokeWidth={isActive ? 2.2 : 1.7} />
+
+                {isHydrated && item.name === "Wishlist" && wishlistCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {wishlistCount > 99 ? "99+" : wishlistCount}
+                  </span>
+                )}
+
+                {isHydrated && item.name === "Cart" && cartCount > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-medium">
                 {item.name}
               </span>

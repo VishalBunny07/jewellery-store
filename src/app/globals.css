@@ -51,8 +51,13 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-padding-top: 90px;
+  overflow-anchor: none;
+}
+
+body {
+  overflow-anchor: none;
 }
 
 body {

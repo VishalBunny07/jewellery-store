@@ -43,3 +43,17 @@ next-env.d.ts
 
 #giva images
 /public/images/reference-giva/
+node_modules/
+dist/
+.env
+
+
+# Database backups
+database/backups/
+*.dump
+*.backup
+
+# Environment variables
+.env
+.env.*
+!.env.example

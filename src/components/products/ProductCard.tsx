@@ -8,6 +8,7 @@ import { Heart, ShoppingBag, Check } from "lucide-react";
 
 import type { Product } from "@/types/product";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface ProductCardProps {
   product: Product;
@@ -17,9 +18,11 @@ export default function ProductCard({
   product,
 }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+
+  const isWishlisted = isInWishlist(product.id);
 
   const discount = product.originalPrice
     ? Math.round(
@@ -38,9 +41,7 @@ export default function ProductCard({
 
   return (
     <article className="group min-w-0">
-      {/* Product Image */}
       <div className="relative aspect-4/5 overflow-hidden rounded-sm bg-secondary">
-
         <Link
           href={`/products/${product.slug}`}
           className="absolute inset-0"
@@ -56,7 +57,6 @@ export default function ProductCard({
 
         {/* Product Badges */}
         <div className="pointer-events-none absolute left-2 top-2 z-10 flex flex-col gap-1">
-
           {product.isNew && (
             <span className="bg-white px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-primary">
               New
@@ -68,15 +68,12 @@ export default function ProductCard({
               {discount}% OFF
             </span>
           )}
-
         </div>
 
-        {/* Wishlist */}
+        {/* Global Wishlist */}
         <button
           type="button"
-          onClick={() =>
-            setIsWishlisted((previous) => !previous)
-          }
+          onClick={() => toggleWishlist(product)}
           aria-label={
             isWishlisted
               ? `Remove ${product.name} from wishlist`
@@ -113,12 +110,10 @@ export default function ProductCard({
             </>
           )}
         </button>
-
       </div>
 
       {/* Product Details */}
       <div className="pt-3">
-
         <Link
           href={`/products/${product.slug}`}
           className="line-clamp-2 text-xs font-medium text-foreground transition-colors hover:text-primary sm:text-sm"
@@ -127,7 +122,6 @@ export default function ProductCard({
         </Link>
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-
           <span className="text-sm font-semibold text-foreground">
             ₹{product.price.toLocaleString("en-IN")}
           </span>
@@ -137,7 +131,6 @@ export default function ProductCard({
               ₹{product.originalPrice.toLocaleString("en-IN")}
             </span>
           )}
-
         </div>
       </div>
     </article>

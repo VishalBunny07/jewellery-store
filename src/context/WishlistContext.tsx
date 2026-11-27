@@ -5,9 +5,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 import type { Product } from "@/types/product";
@@ -26,48 +25,83 @@ const WishlistContext = createContext<
   WishlistContextType | undefined
 >(undefined);
 
-const WISHLIST_STORAGE_KEY = "jewellery-store-wishlist";
+const STORAGE_KEY = "jewellery-store-wishlist";
+
+const EMPTY_ITEMS: Product[] = [];
+
+let cachedRaw: string | null | undefined;
+let cachedItems: Product[] = EMPTY_ITEMS;
+
+const listeners = new Set<() => void>();
+
+function getWishlistSnapshot(): Product[] {
+  if (typeof window === "undefined") return EMPTY_ITEMS;
+
+  const raw = localStorage.getItem(STORAGE_KEY);
+
+  if (raw === cachedRaw) return cachedItems;
+
+  cachedRaw = raw;
+
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    cachedItems = Array.isArray(parsed)
+      ? (parsed as Product[])
+      : EMPTY_ITEMS;
+  } catch {
+    cachedItems = EMPTY_ITEMS;
+  }
+
+  return cachedItems;
+}
+
+function getServerSnapshot(): Product[] {
+  return EMPTY_ITEMS;
+}
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+
+  function handleStorage(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+
+    cachedRaw = undefined;
+    getWishlistSnapshot();
+    callback();
+  }
+
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+function saveWishlist(items: Product[]) {
+  try {
+    const raw = JSON.stringify(items);
+    localStorage.setItem(STORAGE_KEY, raw);
+
+    cachedRaw = raw;
+    cachedItems = items;
+
+    listeners.forEach((listener) => listener());
+  } catch (error) {
+    console.error("Unable to save wishlist:", error);
+  }
+}
 
 export function WishlistProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Load wishlist once when initializing in the browser.
-  const [wishlistItems, setWishlistItems] = useState<Product[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    try {
-      const savedWishlist = localStorage.getItem(
-        WISHLIST_STORAGE_KEY
-      );
-
-      if (!savedWishlist) return [];
-
-      const parsedWishlist: unknown = JSON.parse(savedWishlist);
-
-      return Array.isArray(parsedWishlist)
-        ? (parsedWishlist as Product[])
-        : [];
-    } catch (error) {
-      console.error("Unable to load wishlist:", error);
-      return [];
-    }
-  });
-
-  const [isWishlistLoaded] = useState(true);
-
-  // Save wishlist whenever it changes.
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        WISHLIST_STORAGE_KEY,
-        JSON.stringify(wishlistItems)
-      );
-    } catch (error) {
-      console.error("Unable to save wishlist:", error);
-    }
-  }, [wishlistItems]);
+  const wishlistItems = useSyncExternalStore(
+    subscribe,
+    getWishlistSnapshot,
+    getServerSnapshot
+  );
 
   const isInWishlist = useCallback(
     (productId: string) =>
@@ -76,41 +110,36 @@ export function WishlistProvider({
   );
 
   const toggleWishlist = useCallback((product: Product) => {
-    setWishlistItems((currentItems) => {
-      const alreadyExists = currentItems.some(
-        (item) => item.id === product.id
-      );
+    const currentItems = getWishlistSnapshot();
 
-      if (alreadyExists) {
-        return currentItems.filter(
-          (item) => item.id !== product.id
-        );
-      }
+    const exists = currentItems.some(
+      (item) => item.id === product.id
+    );
 
-      return [...currentItems, product];
-    });
+    const updatedItems = exists
+      ? currentItems.filter((item) => item.id !== product.id)
+      : [...currentItems, product];
+
+    saveWishlist(updatedItems);
   }, []);
 
-  const removeFromWishlist = useCallback(
-    (productId: string) => {
-      setWishlistItems((currentItems) =>
-        currentItems.filter((item) => item.id !== productId)
-      );
-    },
-    []
-  );
+  const removeFromWishlist = useCallback((productId: string) => {
+    const updatedItems = getWishlistSnapshot().filter(
+      (item) => item.id !== productId
+    );
+
+    saveWishlist(updatedItems);
+  }, []);
 
   const clearWishlist = useCallback(() => {
-    setWishlistItems([]);
+    saveWishlist([]);
   }, []);
-
-  const wishlistCount = wishlistItems.length;
 
   const value = useMemo(
     () => ({
       wishlistItems,
-      wishlistCount,
-      isWishlistLoaded,
+      wishlistCount: wishlistItems.length,
+      isWishlistLoaded: true,
       isInWishlist,
       toggleWishlist,
       removeFromWishlist,
@@ -118,8 +147,6 @@ export function WishlistProvider({
     }),
     [
       wishlistItems,
-      wishlistCount,
-      isWishlistLoaded,
       isInWishlist,
       toggleWishlist,
       removeFromWishlist,

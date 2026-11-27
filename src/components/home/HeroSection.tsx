@@ -10,7 +10,7 @@ export default function HeroSection() {
 
         {/* Background Image */}
         <Image
-          src="/images/banners/hero.jpg"
+          src="/images/banners/hero.webp"
           alt="Elegant jewellery collection"
           fill
           priority

@@ -21,6 +21,7 @@ import {
 
 import type { Product } from "@/types/product";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface ProductDetailsProps {
   product: Product;
@@ -30,7 +31,6 @@ export default function ProductDetails({
   product,
 }: ProductDetailsProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [pincode, setPincode] = useState("");
   const [deliveryMessage, setDeliveryMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
@@ -38,6 +38,8 @@ export default function ProductDetails({
   const [cartMessage, setCartMessage] = useState("");
 
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
 
   const galleryImages =
     product.images?.length
@@ -390,9 +392,7 @@ export default function ProductDetails({
 
               <button
                 type="button"
-                onClick={() =>
-                  setIsWishlisted((previous) => !previous)
-                }
+                onClick={() => toggleWishlist(product)}
                 aria-label={
                   isWishlisted
                     ? "Remove from wishlist"

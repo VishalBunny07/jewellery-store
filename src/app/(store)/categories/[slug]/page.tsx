@@ -5,21 +5,24 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { categories } from "@/data/categories";
-import { products } from "@/data/products";
+import {
+  getCategoryBySlug,
+  getProductsByCategory,
+} from "@/services/product.service";
+
 import ProductFilters from "@/components/products/ProductFilters";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
 }
 
-// Generate static routes for all categories
+// Generate category routes.
 export function generateStaticParams() {
   return categories.map((category) => ({
     slug: category.slug,
   }));
 }
 
-// Loading fallback
 function CategoryLoading() {
   return (
     <div className="section-container animate-pulse py-10">
@@ -33,29 +36,22 @@ function CategoryLoading() {
   );
 }
 
-// Category page content
 async function CategoryContent({
   params,
 }: CategoryPageProps) {
   const { slug } = await params;
 
-  // Find selected category
-  const category = categories.find(
-    (item) => item.slug === slug
-  );
+  const [category, categoryProducts] = await Promise.all([
+    getCategoryBySlug(slug),
+    getProductsByCategory(slug),
+  ]);
 
   if (!category) {
     notFound();
   }
 
-  // Get products belonging to this category
-  const categoryProducts = products.filter(
-    (product) => product.category === category.slug
-  );
-
   return (
     <main className="min-h-screen">
-
       {/* Breadcrumb */}
       <section className="section-container pt-5 pb-4">
         <nav
@@ -91,10 +87,8 @@ async function CategoryContent({
             className="block h-220px w-full object-cover sm:h-300px lg:h-380px"
           />
 
-          {/* Image Overlay */}
           <div className="pointer-events-none absolute inset-0 bg-black/15" />
 
-          {/* Banner Text */}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-5 text-center">
             <div>
               <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-white sm:text-xs">
@@ -128,14 +122,12 @@ async function CategoryContent({
         </div>
       </section>
 
-      {/* Product Sorting and Filtering */}
+      {/* Database Products */}
       <ProductFilters products={categoryProducts} />
-
     </main>
   );
 }
 
-// Main category page
 export default function CategoryPage({
   params,
 }: CategoryPageProps) {

@@ -5,9 +5,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 import type { Product } from "@/types/product";
@@ -32,60 +31,117 @@ const CartContext = createContext<CartContextType | undefined>(
   undefined
 );
 
-const CART_STORAGE_KEY = "jewellery-store-cart";
+const STORAGE_KEY = "jewellery-store-cart";
+
+const EMPTY_ITEMS: CartItem[] = [];
+
+let cachedRaw: string | null | undefined;
+let cachedItems: CartItem[] = EMPTY_ITEMS;
+
+const listeners = new Set<() => void>();
+
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== "object") return false;
+
+  const cartItem = item as CartItem;
+
+  return (
+    !!cartItem.product &&
+    typeof cartItem.product.id === "string" &&
+    typeof cartItem.product.name === "string" &&
+    typeof cartItem.product.price === "number" &&
+    Number.isInteger(cartItem.quantity) &&
+    cartItem.quantity > 0
+  );
+}
+
+function getCartSnapshot(): CartItem[] {
+  if (typeof window === "undefined") return EMPTY_ITEMS;
+
+  const raw = localStorage.getItem(STORAGE_KEY);
+
+  if (raw === cachedRaw) return cachedItems;
+
+  cachedRaw = raw;
+
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+
+    cachedItems = Array.isArray(parsed)
+      ? parsed.filter(isValidCartItem)
+      : EMPTY_ITEMS;
+  } catch {
+    cachedItems = EMPTY_ITEMS;
+  }
+
+  return cachedItems;
+}
+
+function getServerSnapshot(): CartItem[] {
+  return EMPTY_ITEMS;
+}
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+
+  function handleStorage(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+
+    cachedRaw = undefined;
+    getCartSnapshot();
+    callback();
+  }
+
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+function saveCart(items: CartItem[]) {
+  try {
+    const raw = JSON.stringify(items);
+    localStorage.setItem(STORAGE_KEY, raw);
+
+    cachedRaw = raw;
+    cachedItems = items;
+
+    listeners.forEach((listener) => listener());
+  } catch (error) {
+    console.error("Unable to save cart:", error);
+  }
+}
 
 export function CartProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartLoaded, setIsCartLoaded] = useState(false);
-
-  // Load saved cart after the component mounts.
-  useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-
-      if (savedCart) {
-        const parsedCart: unknown = JSON.parse(savedCart);
-
-        if (Array.isArray(parsedCart)) {
-          setCartItems(parsedCart as CartItem[]);
-        }
-      }
-    } catch (error) {
-      console.error("Unable to load cart:", error);
-    } finally {
-      setIsCartLoaded(true);
-    }
-  }, []);
-
-  // Save cart whenever it changes.
-  useEffect(() => {
-    if (!isCartLoaded) return;
-
-    try {
-      localStorage.setItem(
-        CART_STORAGE_KEY,
-        JSON.stringify(cartItems)
-      );
-    } catch (error) {
-      console.error("Unable to save cart:", error);
-    }
-  }, [cartItems, isCartLoaded]);
+  const cartItems = useSyncExternalStore(
+    subscribe,
+    getCartSnapshot,
+    getServerSnapshot
+  );
 
   const addToCart = useCallback(
     (product: Product, quantity = 1) => {
-      if (!product.inStock || quantity < 1) return;
+      if (
+        !product.inStock ||
+        !Number.isInteger(quantity) ||
+        quantity < 1
+      ) {
+        return;
+      }
 
-      setCartItems((currentItems) => {
-        const existingItem = currentItems.find(
-          (item) => item.product.id === product.id
-        );
+      const currentItems = getCartSnapshot();
+      const existingItem = currentItems.find(
+        (item) => item.product.id === product.id
+      );
 
-        if (existingItem) {
-          return currentItems.map((item) =>
+      const updatedItems = existingItem
+        ? currentItems.map((item) =>
             item.product.id === product.id
               ? {
                   ...item,
@@ -93,49 +149,42 @@ export function CartProvider({
                   quantity: item.quantity + quantity,
                 }
               : item
-          );
-        }
+          )
+        : [...currentItems, { product, quantity }];
 
-        return [
-          ...currentItems,
-          {
-            product,
-            quantity,
-          },
-        ];
-      });
+      saveCart(updatedItems);
     },
     []
   );
 
   const removeFromCart = useCallback((productId: string) => {
-    setCartItems((currentItems) =>
-      currentItems.filter(
-        (item) => item.product.id !== productId
-      )
+    const updatedItems = getCartSnapshot().filter(
+      (item) => item.product.id !== productId
     );
+
+    saveCart(updatedItems);
   }, []);
 
   const updateQuantity = useCallback(
     (productId: string, quantity: number) => {
-      if (quantity < 1) {
+      if (!Number.isInteger(quantity) || quantity < 1) {
         removeFromCart(productId);
         return;
       }
 
-      setCartItems((currentItems) =>
-        currentItems.map((item) =>
-          item.product.id === productId
-            ? { ...item, quantity }
-            : item
-        )
+      const updatedItems = getCartSnapshot().map((item) =>
+        item.product.id === productId
+          ? { ...item, quantity }
+          : item
       );
+
+      saveCart(updatedItems);
     },
     [removeFromCart]
   );
 
   const clearCart = useCallback(() => {
-    setCartItems([]);
+    saveCart([]);
   }, []);
 
   const cartCount = useMemo(
@@ -162,7 +211,7 @@ export function CartProvider({
       cartItems,
       cartCount,
       subtotal,
-      isCartLoaded,
+      isCartLoaded: true,
       addToCart,
       removeFromCart,
       updateQuantity,
@@ -172,7 +221,6 @@ export function CartProvider({
       cartItems,
       cartCount,
       subtotal,
-      isCartLoaded,
       addToCart,
       removeFromCart,
       updateQuantity,

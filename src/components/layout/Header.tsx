@@ -4,16 +4,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Search,
   Heart,
   ShoppingBag,
   Menu,
   X,
   UserRound,
+  Search,
 } from "lucide-react";
 
 import DesktopNavigation from "../navigation/DesktopNavigation";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
+import SearchBox from "@/components/layout/SearchBox";
 
 const menuItems = [
   { name: "New In", href: "/collections/new-arrivals" },
@@ -31,18 +33,19 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
 
   return (
-    <header className="sticky top-0 z-50 bg-background">
+    <header className="sticky top-0 z-50 bg-background [overflow-anchor:none]">
       <div className="section-container">
         {/* Main Header */}
-        <div className="flex h-68px items-center justify-between gap-3 md:h-82px">
+        <div className="relative flex h-16 items-center justify-between gap-2 md:h-20">
 
           {/* Mobile Menu Button */}
           <button
             type="button"
             onClick={() => {
-              setMenuOpen(!menuOpen);
+              setMenuOpen((previous) => !previous);
               setSearchOpen(false);
             }}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -58,7 +61,7 @@ export default function Header() {
             className="flex min-w-0 flex-col items-center lg:items-start"
             aria-label="Jewellery Store home"
           >
-            <span className="whitespace-nowrap font-serif text-[20px] leading-tight text-primary sm:text-2xl">
+            <span className="whitespace-nowrap font-serif text-xl leading-tight text-primary sm:text-2xl">
               Jewellery Store
             </span>
 
@@ -68,20 +71,9 @@ export default function Header() {
           </Link>
 
           {/* Desktop Search */}
-          <form
-            action="/search"
-            className="mx-8 hidden max-w-md flex-1 items-center border-b border-border py-2 lg:flex"
-          >
-            <Search size={18} className="shrink-0 text-muted" />
-
-            <input
-              type="search"
-              name="q"
-              placeholder="Search jewellery..."
-              aria-label="Search jewellery"
-              className="ml-3 w-full bg-transparent text-sm outline-none placeholder:text-muted"
-            />
-          </form>
+          <div className="mx-8 hidden max-w-md flex-1 lg:block">
+            <SearchBox />
+          </div>
 
           {/* Header Actions */}
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
@@ -90,19 +82,20 @@ export default function Header() {
             <button
               type="button"
               onClick={() => {
-                setSearchOpen(!searchOpen);
+                setSearchOpen((previous) => !previous);
                 setMenuOpen(false);
               }}
-              aria-label="Toggle search"
+              aria-label={searchOpen ? "Close search" : "Open search"}
+              aria-expanded={searchOpen}
               className="flex h-10 w-10 items-center justify-center lg:hidden"
             >
-              <Search size={21} />
+              {searchOpen ? <X size={21} /> : <Search size={21} />}
             </button>
 
             {/* Desktop Search Icon */}
             <Link
               href="/search"
-              aria-label="Search"
+              aria-label="Search products"
               className="hidden h-10 w-10 items-center justify-center lg:flex"
             >
               <Search size={21} />
@@ -120,44 +113,40 @@ export default function Header() {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              aria-label="Wishlist"
-              className="flex h-10 w-10 items-center justify-center"
+              aria-label={`Wishlist, ${wishlistCount} saved products`}
+              className="relative hidden h-10 w-10 items-center justify-center lg:flex"
             >
               <Heart size={21} />
+
+              {wishlistCount > 0 && (
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Link>
 
             {/* Cart */}
             <Link
               href="/cart"
               aria-label={`Shopping bag, ${cartCount} items`}
-              className="relative flex h-10 w-10 items-center justify-center"
+              className="relative hidden h-10 w-10 items-center justify-center lg:flex"
             >
               <ShoppingBag size={21} />
 
-              <span className="absolute right-0 top-0 flex h-16px min-w-16px items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
 
-        {/* Mobile Search Field */}
+        {/* Mobile Search */}
         {searchOpen && (
-          <form
-            action="/search"
-            className="flex items-center gap-3 border-t border-border py-3 lg:hidden"
-          >
-            <Search size={19} className="shrink-0 text-muted" />
-
-            <input
-              type="search"
-              name="q"
-              autoFocus
-              placeholder="Search rings, earrings, necklaces..."
-              aria-label="Search jewellery"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted"
-            />
-          </form>
+          <div className="border-t border-border py-3 lg:hidden">
+            <SearchBox />
+          </div>
         )}
       </div>
 
@@ -166,7 +155,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="absolute left-0 top-full max-h-[calc(100dvh-68px)] w-full overflow-y-auto border-t border-border bg-background shadow-lg lg:hidden">
+        <div className="absolute left-0 top-full max-h-[calc(100dvh-64px)] w-full overflow-y-auto border-t border-border bg-background shadow-lg lg:hidden">
           <nav
             aria-label="Mobile navigation"
             className="section-container py-3"
