@@ -52,9 +52,15 @@
 
 html {
   scroll-behavior: auto;
-  scroll-padding-top: 90px;
+  scroll-padding-top: 0;
   overflow-anchor: none;
 }
+
+
+.scroll-target {
+  scroll-margin-top: 90px;
+}
+
 
 body {
   overflow-anchor: none;
